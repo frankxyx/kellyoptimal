@@ -1,0 +1,27 @@
+/* src/App.css */
+
+/* Ensure the page and root fill the viewport */
+html, body, #root {
+  margin: 0;
+  height: 100%;
+}
+
+/* Center everything in the viewport */
+.app-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  background-color: #f0f2f5;
+}
+
+/* Style for the quiz card panel */
+.quiz-card {
+  width: 360px;
+  padding: 24px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  text-align: left;
+}
+
