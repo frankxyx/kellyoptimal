@@ -1,5 +1,5 @@
 .quiz-card {
-  width: 360px;
+  width: 500px;
   padding: 24px;
   background-color: #fff;
   border-radius: 8px;
@@ -11,7 +11,7 @@
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
-  margin-top: 12px;
+  margin-top: 36px;
 }
 
 .option-button {
@@ -25,6 +25,21 @@
 }
 .option-button:hover {
   background-color: #ececec;
+}
+
+/* Reserve a fixed area for the chart so it never overlaps text */
+.chart-wrapper {
+  width: 100%;
+  height: 240px;          /* or whatever height you prefer */
+  margin: 24px 0;         /* space above & below chart */
+  padding-bottom: 32px;   /* extra space for labels */
+  overflow: visible;      /* allow axis labels to show */
+}
+
+/* force ResponsiveContainer’s own wrapper div to fill 100% height */
+.chart-wrapper > .recharts-responsive-container {
+  width: 100% !important;
+  height: 100% !important;
 }
 
 .feedback-container {

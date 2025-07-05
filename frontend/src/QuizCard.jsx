@@ -1,11 +1,23 @@
 // src/QuizCard.jsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo} from 'react';
 import { getQuestion } from './api';
 import './QuizCard.css';
+import PriceYieldChart from './PriceYieldChart';
+import { makeCurve, kellyAllocation } from './bondUtils';
 
 export default function QuizCard() {
   const [question, setQuestion] = useState(null);
   const [feedback, setFeedback] = useState('');
+  const [confidence, setConfidence] = useState(0.5); // 50% confidence by default
+
+  const curve = useMemo(() => {
+  if (!question) return [];      // question is null → no curve yet
+  return makeCurve(
+    question.face,
+    question.coupon,
+    question.years
+  );
+}, [question]);
 
   useEffect(() => {
     loadQuestion();
@@ -32,6 +44,25 @@ export default function QuizCard() {
       </div>
     );
   }
+
+  // pick the ±1% yields
+  const goodYield = question.rate - 0.01;
+  const badYield  = question.rate + 0.01;
+  const priceUp   = curve.find(({ yield: y }) => y === +(goodYield * 100).toFixed(2))?.price;
+  const priceDown = curve.find(({ yield: y }) => y === +(badYield  * 100).toFixed(2))?.price;
+
+  // compute Kelly fraction based on user confidence
+  const kelly = (priceUp && priceDown)
+    ? Math.max(
+        0,
+        kellyAllocation({
+          currentPrice: question.correct,
+          priceUp,
+          priceDown,
+          p: confidence
+        })
+      )
+    : 0;
 
   return (
     <div className="quiz-card">
@@ -66,6 +97,43 @@ export default function QuizCard() {
           );
         })}
       </div>
+
+      <div className="chart-wrapper">
+      <PriceYieldChart
+         face={question.face}
+         coupon={question.coupon}
+         years={question.years}
+         correctRate={question.rate}
+         correctPrice={question.correct}
+       />
+     </div>      
+
+        {/* CONFIDENCE SLIDER */}
+      <div className="confidence-container">
+        <label htmlFor="confidence">
+          Your confidence that yield will <em>fall</em> by 1%:
+          <strong> {(confidence * 100).toFixed(0)}%</strong>
+        </label>
+        <input
+          id="confidence"
+          type="range"
+          min="0"
+          max="100"
+          step="1"
+          value={confidence * 100}
+          onChange={e => setConfidence(e.target.value / 100)}
+        />
+      </div>
+
+      {/* KELLY ALLOCATION DISPLAY */}
+      <div className="kelly-container">
+        <p>
+          Kelly‐optimal allocation: <strong>{(kelly * 100).toFixed(1)}%</strong>{" "}
+          of your capital
+        </p>
+      </div>
+
+      
 
       {feedback && (
         <div className="feedback-container">
