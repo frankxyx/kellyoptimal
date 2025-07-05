@@ -3,11 +3,12 @@ import { useState, useEffect, useMemo} from 'react';
 import { getQuestion } from './api';
 import './QuizCard.css';
 import PriceYieldChart from './PriceYieldChart';
-import { makeCurve, kellyAllocation } from './bondUtils';
+import { makeCurve, kellyAllocation, bondPrice} from './bondUtils';
 
 export default function QuizCard() {
   const [question, setQuestion] = useState(null);
   const [feedback, setFeedback] = useState('');
+  const [shockBp,  setShockBp] = useState(25); // 25Bp shock by default
   const [confidence, setConfidence] = useState(0.5); // 50% confidence by default
 
   const curve = useMemo(() => {
@@ -44,12 +45,17 @@ export default function QuizCard() {
       </div>
     );
   }
+  
+  // convert shockBp to decimal yield change
+  const shock = shockBp / 10000; 
 
-  // pick the ±1% yields
-  const goodYield = question.rate - 0.01;
-  const badYield  = question.rate + 0.01;
-  const priceUp   = curve.find(({ yield: y }) => y === +(goodYield * 100).toFixed(2))?.price;
-  const priceDown = curve.find(({ yield: y }) => y === +(badYield  * 100).toFixed(2))?.price;
+  // compute shifted yields
+  const goodYield = question.rate - shock;
+  const badYield  = question.rate + shock;
+
+  // look up prices from the curve
+  const priceUp   = bondPrice(question.face, question.coupon, question.years, goodYield);
+  const priceDown = bondPrice(question.face, question.coupon, question.years, badYield);
 
   // compute Kelly fraction based on user confidence
   const kelly = (priceUp && priceDown)
@@ -108,10 +114,26 @@ export default function QuizCard() {
        />
      </div>      
 
-        {/* CONFIDENCE SLIDER */}
+        {/* shock‐size slider */}
+      <div className="shock-container">
+        <label htmlFor="shock">
+          Yield shock size: <strong>{shockBp} bp</strong>
+        </label>
+        <input
+          id="shock"
+          type="range"
+          min="1"
+          max="100"
+          step="1"
+          value={shockBp}
+          onChange={e => setShockBp(+e.target.value)}
+        />
+      </div>
+
+    {/* confidence slider */}
       <div className="confidence-container">
         <label htmlFor="confidence">
-          Your confidence that yield will <em>fall</em> by 1%:
+          Confidence that yield will fall by {shockBp} bp:
           <strong> {(confidence * 100).toFixed(0)}%</strong>
         </label>
         <input
@@ -132,8 +154,6 @@ export default function QuizCard() {
           of your capital
         </p>
       </div>
-
-      
 
       {feedback && (
         <div className="feedback-container">
